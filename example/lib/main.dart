@@ -15,6 +15,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  String _apName = "";
+  String _newApName = "";
+  String _newApPassword = "";
 
   @override
   void initState() {
@@ -32,6 +35,14 @@ class _MyAppState extends State<MyApp> {
       platformVersion = 'Failed to get platform version.';
     }
 
+    String apName = "";
+    try {
+      await WifiManagerPlugin.requestPermissions();
+      apName = await WifiManagerPlugin.getConnectedWifiApName();
+    } catch (e) {
+      print("getConnectedWifiApName error:$e");
+    }
+
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
@@ -39,6 +50,23 @@ class _MyAppState extends State<MyApp> {
 
     setState(() {
       _platformVersion = platformVersion;
+      _apName = apName;
+    });
+  }
+
+  Future<void> connectNewAp() async {
+    print("connectNewAp");
+    await WifiManagerPlugin.connectWifi(_newApName, _newApPassword);
+
+    String apName = "";
+    try {
+      apName = await WifiManagerPlugin.getConnectedWifiApName();
+    } catch (e) {
+      print("getConnectedWifiApName error:$e");
+    }
+
+    setState(() {
+      _apName = apName;
     });
   }
 
@@ -50,7 +78,23 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            children: [
+              Text('Running on: $_platformVersion\n'),
+              Text('ApName on: $_apName'),
+              TextField(
+                  decoration: InputDecoration(hintText: 'Ap Name'),
+                  onChanged: (value) {
+                    _newApName = value;
+                  }),
+              TextField(
+                  decoration: InputDecoration(hintText: 'Ap Password'),
+                  onChanged: (value) {
+                    _newApPassword = value;
+                  }),
+              ElevatedButton(onPressed: connectNewAp, child: Text("Conntect")),
+            ],
+          ),
         ),
       ),
     );
