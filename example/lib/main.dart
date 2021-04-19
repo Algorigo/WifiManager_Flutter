@@ -35,6 +35,19 @@ class _MyAppState extends State<MyApp> {
       platformVersion = 'Failed to get platform version.';
     }
 
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+
+    setState(() {
+      _platformVersion = platformVersion;
+    });
+
+    await getApName();
+  }
+
+  Future<void> getApName() async {
     String apName = "";
     try {
       await WifiManagerPlugin.requestPermissions();
@@ -43,13 +56,7 @@ class _MyAppState extends State<MyApp> {
       print("getConnectedWifiApName error:$e");
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
     setState(() {
-      _platformVersion = platformVersion;
       _apName = apName;
     });
   }
@@ -58,16 +65,7 @@ class _MyAppState extends State<MyApp> {
     print("connectNewAp");
     await WifiManagerPlugin.connectWifi(_newApName, _newApPassword);
 
-    String apName = "";
-    try {
-      apName = await WifiManagerPlugin.getConnectedWifiApName();
-    } catch (e) {
-      print("getConnectedWifiApName error:$e");
-    }
-
-    setState(() {
-      _apName = apName;
-    });
+    await getApName();
   }
 
   @override
@@ -81,6 +79,7 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             children: [
               Text('Running on: $_platformVersion\n'),
+              ElevatedButton(onPressed: getApName, child: Text("Get Ap Info")),
               Text('ApName on: $_apName'),
               TextField(
                   decoration: InputDecoration(hintText: 'Ap Name'),
