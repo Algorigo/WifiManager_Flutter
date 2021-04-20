@@ -18,6 +18,7 @@ class _MyAppState extends State<MyApp> {
   String _apName = "";
   String _newApName = "";
   String _newApPassword = "";
+  String _scanResult = "";
 
   @override
   void initState() {
@@ -68,6 +69,15 @@ class _MyAppState extends State<MyApp> {
     await getApName();
   }
 
+  Future<void> scanWifi() async {
+    print("scanWifi");
+    var wifiList = await WifiManagerPlugin.scanWifi(false);
+
+    setState(() {
+      _scanResult = wifiList.join("\n");
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -92,6 +102,8 @@ class _MyAppState extends State<MyApp> {
                     _newApPassword = value;
                   }),
               ElevatedButton(onPressed: connectNewAp, child: Text("Conntect")),
+              ElevatedButton(onPressed: scanWifi, child: Text("Scan Wifi")),
+              Expanded(child: Text(_scanResult)),
             ],
           ),
         ),

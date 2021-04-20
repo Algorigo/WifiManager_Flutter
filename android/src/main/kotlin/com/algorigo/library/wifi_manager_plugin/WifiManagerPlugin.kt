@@ -5,7 +5,6 @@ import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.annotation.NonNull
 import com.algorigo.library.rx.RxWifiManager
-
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -13,7 +12,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 
 /** WifiManagerPlugin */
 class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
@@ -25,7 +23,7 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
   private lateinit var context : Context
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "wifi_manager_plugin")
+    channel = MethodChannel(flutterPluginBinding.binaryMessenger, METHOD_CHANNEL_NAME)
     channel.setMethodCallHandler(this)
   }
 
@@ -55,6 +53,18 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           result.error(IllegalArgumentException::class.java.simpleName, null, null)
         }
       }
+      "scanWifi" -> {
+        val only24GHz = call.arguments as? Boolean
+        RxWifiManager.scan(context, only24GHz ?: false)
+                .map {
+                  it.map { it.SSID }
+                }
+                .subscribe({
+                  result.success(it);
+                }, {
+                  result.error(it.javaClass.simpleName, it.message, it.stackTraceToString())
+                })
+      }
       else -> result.notImplemented()
     }
   }
@@ -81,5 +91,7 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
   companion object {
     private val LOG_TAG = WifiManagerPlugin::class.java.simpleName
+
+    private const val METHOD_CHANNEL_NAME = "wifi_manager_plugin"
   }
 }

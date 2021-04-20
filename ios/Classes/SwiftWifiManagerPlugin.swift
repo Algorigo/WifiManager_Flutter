@@ -28,6 +28,8 @@ public class SwiftWifiManagerPlugin: NSObject, FlutterPlugin {
         result(FlutterError(code: "Unsupported", message: nil, details: nil))
     case "connectWifi":
         result(FlutterError(code: "Unsupported", message: nil, details: nil))
+    case "scanWifi":
+        result(FlutterError(code: "Unsupported", message: nil, details: nil))
     default:
         result(FlutterMethodNotImplemented)
     }
