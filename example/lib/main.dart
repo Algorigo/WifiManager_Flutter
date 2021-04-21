@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:rxdart/rxdart.dart';
 import 'package:wifi_manager_plugin/wifi_manager_plugin.dart';
 
 void main() {
@@ -16,9 +18,16 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   String _apName = "";
-  String _newApName = "";
+  final _newApNameController = TextEditingController();
   String _newApPassword = "";
-  String _scanResult = "";
+  StreamSubscription<String> _subscription = null;
+
+  String get _scanTitle {
+    return _subscription == null ? "Connect" : "Disconnect";
+  }
+
+  String _result = "";
+  List<String> _scanResult = [];
 
   @override
   void initState() {
@@ -64,9 +73,25 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> connectNewAp() async {
     print("connectNewAp");
-    await WifiManagerPlugin.connectWifi(_newApName, _newApPassword);
+    if (_subscription == null) {
+      Observable<String> stream = await WifiManagerPlugin.connectWifi(
+          _newApNameController.text, _newApPassword);
+      _subscription = stream.doOnCancel(() {
+        setState(() {
+          _subscription = null;
+        });
+      }).listen((event) {
+        print("event:$event");
 
-    await getApName();
+        setState(() {
+          _result = "Connected";
+        });
+      });
+      setState(() {});
+    } else {
+      _subscription?.cancel();
+      _result = "Disconnected";
+    }
   }
 
   Future<void> scanWifi() async {
@@ -74,7 +99,13 @@ class _MyAppState extends State<MyApp> {
     var wifiList = await WifiManagerPlugin.scanWifi(false);
 
     setState(() {
-      _scanResult = wifiList.join("\n");
+      _scanResult = wifiList;
+    });
+  }
+
+  Future<void> scanResultSelected(int count) async {
+    setState(() {
+      _newApNameController.text = _scanResult[count];
     });
   }
 
@@ -92,18 +123,33 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(onPressed: getApName, child: Text("Get Ap Info")),
               Text('ApName on: $_apName'),
               TextField(
-                  decoration: InputDecoration(hintText: 'Ap Name'),
-                  onChanged: (value) {
-                    _newApName = value;
-                  }),
+                controller: _newApNameController,
+                decoration: InputDecoration(hintText: 'Ap Name'),
+              ),
               TextField(
                   decoration: InputDecoration(hintText: 'Ap Password'),
                   onChanged: (value) {
                     _newApPassword = value;
                   }),
-              ElevatedButton(onPressed: connectNewAp, child: Text("Conntect")),
+              ElevatedButton(onPressed: connectNewAp, child: Text(_scanTitle)),
               ElevatedButton(onPressed: scanWifi, child: Text("Scan Wifi")),
-              Expanded(child: Text(_scanResult)),
+              Text(_result),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _scanResult.length,
+                  itemBuilder: (buildContext, position) {
+                    return GestureDetector(
+                      onTap: () => scanResultSelected(position),
+                      child: Container(
+                        padding: EdgeInsets.all(20),
+                        width: double.infinity,
+                        child: Text(_scanResult[position]),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),

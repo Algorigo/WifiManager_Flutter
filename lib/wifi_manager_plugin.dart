@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionException implements Exception {
@@ -52,14 +53,38 @@ class WifiManagerPlugin {
     return apName;
   }
 
-  static Future<void> connectWifi(String apName, String apPassword) async {
-    await _channel.invokeMapMethod('connectWifi', {"apName": apName, "apPassword": apPassword});
-  }
-
   static Future<List<String>> scanWifi([bool only2GHz = false]) async {
     return _channel.invokeMethod('scanWifi', only2GHz).then((value) {
       var list = value as List<dynamic>;
       return list.map((e) => e as String).toList();
     });
+  }
+
+  static Future<Observable<String>> connectWifi(
+      String ssid, String password) async {
+    var id = await _channel
+        .invokeMethod('connectWifi', {'ssid': ssid, 'password': password});
+    return Observable(id as int);
+  }
+}
+
+class Observable<T> extends Stream<T> {
+  static const EventChannel _eventChannel =
+      const EventChannel('wifi_manager_connect_wifi');
+
+  Observable(this._id);
+
+  int _id;
+
+  @override
+  StreamSubscription<T> listen(void Function(T event) onData,
+      {Function onError, void Function() onDone, bool cancelOnError}) {
+    return _eventChannel
+        .receiveBroadcastStream(_id)
+        .map((event) => event as T)
+        .listen((event) => onData(event),
+            onError: (error) => onError?.call(error),
+            onDone: () => onDone?.call(),
+            cancelOnError: true);
   }
 }
