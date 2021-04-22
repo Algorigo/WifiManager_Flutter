@@ -74,7 +74,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> connectNewAp() async {
     print("connectNewAp");
     if (_subscription == null) {
-      Observable<String> stream = await WifiManagerPlugin.connectWifi(
+      Stream<String> stream = await WifiManagerPlugin.connectWifi(
           _newApNameController.text, _newApPassword);
       _subscription = stream.doOnCancel(() {
         setState(() {

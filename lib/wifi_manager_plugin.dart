@@ -60,19 +60,19 @@ class WifiManagerPlugin {
     });
   }
 
-  static Future<Observable<String>> connectWifi(
+  static Future<Stream<String>> connectWifi(
       String ssid, String password) async {
     var id = await _channel
         .invokeMethod('connectWifi', {'ssid': ssid, 'password': password});
-    return Observable(id as int);
+    return _Observable(id as int);
   }
 }
 
-class Observable<T> extends Stream<T> {
+class _Observable<T> extends Stream<T> {
   static const EventChannel _eventChannel =
       const EventChannel('wifi_manager_connect_wifi');
 
-  Observable(this._id);
+  _Observable(this._id);
 
   int _id;
 
