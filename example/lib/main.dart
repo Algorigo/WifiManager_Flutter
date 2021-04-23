@@ -86,6 +86,10 @@ class _MyAppState extends State<MyApp> {
         setState(() {
           _result = "Connected";
         });
+      }, onError: (error) {
+        print("onError:$error");
+      }, onDone: () {
+        print("onDone");
       });
       setState(() {});
     } else {

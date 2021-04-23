@@ -88,7 +88,7 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
   }
 
   override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
-    var id = arguments as? Long
+    val id = arguments as? Long
     if (id != null && observableMap.containsKey(id)) {
       disposableMap[id] = observableMap.remove(id)!!
               .doFinally {

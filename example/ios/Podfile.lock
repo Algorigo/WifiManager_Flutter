@@ -2,13 +2,27 @@ PODS:
   - Flutter (1.0.0)
   - "permission_handler (5.1.0+2)":
     - Flutter
+  - RxCocoa (6.1.0):
+    - RxRelay (= 6.1.0)
+    - RxSwift (= 6.1.0)
+  - RxRelay (6.1.0):
+    - RxSwift (= 6.1.0)
+  - RxSwift (6.1.0)
   - wifi_manager_plugin (0.0.1):
     - Flutter
+    - RxCocoa (= 6.1.0)
+    - RxSwift (= 6.1.0)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - permission_handler (from `.symlinks/plugins/permission_handler/ios`)
   - wifi_manager_plugin (from `.symlinks/plugins/wifi_manager_plugin/ios`)
+
+SPEC REPOS:
+  trunk:
+    - RxCocoa
+    - RxRelay
+    - RxSwift
 
 EXTERNAL SOURCES:
   Flutter:
@@ -21,8 +35,11 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
   permission_handler: ccb20a9fad0ee9b1314a52b70b76b473c5f8dab0
-  wifi_manager_plugin: bfa3dc7834a8639c8745f05e7b883ace27224b6b
+  RxCocoa: 5c51f02d562cbd94629f6c26cf0c80fe4ab8d343
+  RxRelay: 483e1a19fad961b41f0b0c0bee506f46c1ae14fe
+  RxSwift: a834e5c538e89eca0cae86f403f4fbf0336786ce
+  wifi_manager_plugin: b5d878d8300b307d98481c34b5af4926f19305f4
 
-PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+PODFILE CHECKSUM: a75497545d4391e2d394c3668e20cfb1c2bbd4aa
 
-COCOAPODS: 1.9.3
+COCOAPODS: 1.10.1
