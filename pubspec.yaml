@@ -1,8 +1,8 @@
 name: wifi_manager_plugin
-description: A new Flutter plugin.
-version: 0.0.1
-author:
-homepage:
+description: Wifi Manager Flutter plugin.
+version: 1.0.0
+author: rouddy@naver.com
+homepage: https://www.algorigo.com
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
