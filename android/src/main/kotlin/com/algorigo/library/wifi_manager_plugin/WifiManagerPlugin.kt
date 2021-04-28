@@ -51,7 +51,7 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
     val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as? WifiManager
     val ssid = wifiManager?.connectionInfo?.ssid
     if (ssid != null) {
-      result.success(ssid)
+      result.success(ssid.substring(1, ssid.length-1))
     } else {
       result.error(UnsupportedOperationException::class.java.simpleName, null, null)
     }
