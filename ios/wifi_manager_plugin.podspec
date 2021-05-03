@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'wifi_manager_plugin'
-  s.version          = '1.0.1'
+  s.version          = '1.0.2'
   s.summary          = 'Wifi Manager Flutter plugin.'
   s.description      = <<-DESC
 A new Flutter plugin.
