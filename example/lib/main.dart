@@ -26,7 +26,8 @@ class _MyAppState extends State<MyApp> {
     return _subscription == null ? "Connect" : "Disconnect";
   }
 
-  String _result = "";
+  String _wifiResult = "";
+  String _internetResult = "";
   List<String> _scanResult = [];
 
   @override
@@ -80,12 +81,16 @@ class _MyAppState extends State<MyApp> {
         setState(() {
           _subscription = null;
         });
+
+        checkInternetConnection();
       }).listen((event) {
         print("event:$event");
 
         setState(() {
-          _result = "Connected";
+          _wifiResult = "Connected";
         });
+
+        checkInternetConnection();
       }, onError: (error) {
         print("onError:$error");
       }, onDone: () {
@@ -94,8 +99,26 @@ class _MyAppState extends State<MyApp> {
       setState(() {});
     } else {
       _subscription?.cancel();
-      _result = "Disconnected";
+      _wifiResult = "Disconnected";
     }
+  }
+
+  void checkInternetConnection() {
+    waitFor(
+            () => WifiManagerPlugin.internetAvailable().then((value) {
+                  if (!value) throw TimeoutException("");
+                }),
+            Duration(seconds: 5))
+        .then((value) {
+      setState(() {
+        _internetResult = "Internet Connected";
+      });
+    }, onError: (error) {
+      print("checkInternetConnection error:$error");
+      setState(() {
+        _internetResult = "Internet Connection Timeout";
+      });
+    });
   }
 
   Future<void> scanWifi() async {
@@ -137,7 +160,8 @@ class _MyAppState extends State<MyApp> {
                   }),
               ElevatedButton(onPressed: connectNewAp, child: Text(_scanTitle)),
               ElevatedButton(onPressed: scanWifi, child: Text("Scan Wifi")),
-              Text(_result),
+              Text(_wifiResult),
+              Text(_internetResult),
               Expanded(
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -159,5 +183,30 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+}
+
+Future<void> waitFor(Future<void> Function() function,
+    [Duration timeout = null]) {
+  var timeoutSec = timeout?.inSeconds;
+  if (timeoutSec > 0) {
+    var count = 0;
+    return Rx.retryWhen(
+      () => function().asStream(),
+      (error, stackTrace) {
+        if (count++ > timeoutSec) {
+          return Stream.error(error);
+        } else {
+          return Stream.value(1).delay(Duration(seconds: 1));
+        }
+      },
+    ).first;
+  } else {
+    return Rx.retryWhen(
+      () => function().asStream(),
+      (error, stackTrace) {
+        return Stream.value(1).delay(Duration(seconds: 1));
+      },
+    ).first;
   }
 }

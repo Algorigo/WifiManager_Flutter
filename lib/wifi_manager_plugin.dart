@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 
 import 'package:permission_handler/permission_handler.dart';
+import 'package:rxdart/rxdart.dart';
 
 class PermissionException implements Exception {
   PermissionStatus status;
@@ -65,6 +67,18 @@ class WifiManagerPlugin {
     var id = await _channel
         .invokeMethod('connectWifi', {'ssid': ssid, 'password': password});
     return _Observable(id as int);
+  }
+
+  static Future<bool> internetAvailable() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+    } on SocketException catch (e) {
+      print('not connected:$e');
+    }
+    return false;
   }
 }
 
