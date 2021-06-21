@@ -24,4 +24,6 @@ A new Flutter plugin.
   s.framework       = 'NetworkExtension'
   s.dependency      'RxSwift', '6.1.0'
   s.dependency      'RxCocoa', '6.1.0'
+
+  s.compiler_flags = '-DPERMISSION_LOCATION=1'
 end
