@@ -91,12 +91,12 @@ class _Observable<T> extends Stream<T> {
   int _id;
 
   @override
-  StreamSubscription<T> listen(void Function(T event) onData,
-      {Function onError, void Function() onDone, bool cancelOnError}) {
+  StreamSubscription<T> listen(void onData(T event)?,
+      {Function? onError, void onDone()?, bool? cancelOnError}) {
     return _eventChannel
         .receiveBroadcastStream(_id)
         .map((event) => event as T)
-        .listen((event) => onData(event),
+        .listen((event) => onData?.call(event),
             onError: (error) => onError?.call(error),
             onDone: () => onDone?.call(),
             cancelOnError: true);

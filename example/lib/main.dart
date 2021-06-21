@@ -20,7 +20,7 @@ class _MyAppState extends State<MyApp> {
   String _apName = "";
   final _newApNameController = TextEditingController();
   String _newApPassword = "";
-  StreamSubscription<String> _subscription = null;
+  StreamSubscription<String>? _subscription;
 
   String get _scanTitle {
     return _subscription == null ? "Connect" : "Disconnect";
@@ -187,9 +187,9 @@ class _MyAppState extends State<MyApp> {
 }
 
 Future<void> waitFor(Future<void> Function() function,
-    [Duration timeout = null]) {
+    [Duration? timeout]) {
   var timeoutSec = timeout?.inSeconds;
-  if (timeoutSec > 0) {
+  if (timeoutSec != null && timeoutSec > 0) {
     var count = 0;
     return Rx.retryWhen(
       () => function().asStream(),
