@@ -95,7 +95,7 @@ class _MyAppState extends State<MyApp> {
         print("onError:$error");
       }, onDone: () {
         print("onDone");
-      });
+      }, cancelOnError: true);
       setState(() {});
     } else {
       _subscription?.cancel();

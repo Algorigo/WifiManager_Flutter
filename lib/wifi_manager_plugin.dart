@@ -97,7 +97,7 @@ class _Observable<T> extends Stream<T> {
         .receiveBroadcastStream(_id)
         .map((event) => event as T)
         .listen((event) => onData?.call(event),
-            onError: (error) => onError?.call(error),
+            onError: (error) => onError?.call(error, null),
             onDone: () => onDone?.call(),
             cancelOnError: true);
   }
