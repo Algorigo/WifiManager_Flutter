@@ -47,9 +47,9 @@ extension SwiftWifiManagerPlugin: FlutterPlugin {
                     let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
                     configuation.joinOnce = true
                     NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
-                        if error != nil {
+                        if let error = error {
                             print("connect error:\(error)")
-                            emitter.onError(error!)
+                            emitter.onError(error)
                         } else {
                             let connectedWifi = SwiftWifiManagerPlugin.getConnectedWifiApName()
                             if (ssid == connectedWifi) {
