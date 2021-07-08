@@ -7,6 +7,7 @@ import RxSwift
 
 enum WifiManagerError : Error {
     case notSupportedOsVersion(version: String)
+    case wifiNotConnected
 }
 
 public class SwiftWifiManagerPlugin: NSObject {
@@ -30,16 +31,11 @@ extension SwiftWifiManagerPlugin: FlutterPlugin {
     case "getPlatformVersion":
         result("iOS " + UIDevice.current.systemVersion)
     case "getConnectedWifiApName":
-        if let interfaces = CNCopySupportedInterfaces() as NSArray? {
-            for interface in interfaces {
-                if let interfaceInfo = CNCopyCurrentNetworkInfo(interface as! CFString) as NSDictionary? {
-                    let ssid = interfaceInfo[kCNNetworkInfoKeySSID as String] as? String
-                    result(ssid)
-                    return
-                }
-            }
+        if let ssid = SwiftWifiManagerPlugin.getConnectedWifiApName() {
+          result(ssid)
+        } else {
+          result(FlutterError(code: "Unsupported", message: nil, details: nil))
         }
-        result(FlutterError(code: "Unsupported", message: nil, details: nil))
     case "connectWifi":
         if let arguments = call.arguments as? [String: Any],
            let ssid = arguments["ssid"] as? String,
@@ -48,21 +44,28 @@ extension SwiftWifiManagerPlugin: FlutterPlugin {
             let observable: Observable<String>
             if #available(iOS 11.0, *) {
                 observable = Observable<String>.create { (emitter) in
-                    emitter.onNext("\(ssid):\(password)")
-                        let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
-                        configuation.joinOnce = true
-                        NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
-                            if error != nil {
-                                print("error:\(error)")
-                                emitter.onError(error!)
-                            } else {
+                    let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
+                    configuation.joinOnce = true
+                    NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
+                        if error != nil {
+                            print("connect error:\(error)")
+                            emitter.onError(error!)
+                        } else {
+                            let connectedWifi = SwiftWifiManagerPlugin.getConnectedWifiApName()
+                            if (ssid == connectedWifi) {
                                 emitter.onNext("Connected")
+                            } else {
+                                emitter.onError(WifiManagerError.wifiNotConnected)
                             }
                         }
-                    return Disposables.create {
-                        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
                     }
-                }
+                    return Disposables.create()
+                }.do(onDispose: {
+                    NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
+//                     NEHotspotConfigurationManager.shared.getConfiguredSSIDs { list in
+//                         print("list:\(list)")
+//                     }
+                })
             } else {
                 // Fallback on earlier versions
                 observable = Observable.error(WifiManagerError.notSupportedOsVersion(version: ProcessInfo().operatingSystemVersionString))
@@ -77,6 +80,18 @@ extension SwiftWifiManagerPlugin: FlutterPlugin {
     default:
         result(FlutterMethodNotImplemented)
     }
+  }
+
+  fileprivate static func getConnectedWifiApName() -> String? {
+    if let interfaces = CNCopySupportedInterfaces() as NSArray? {
+      for interface in interfaces {
+        if let interfaceInfo = CNCopyCurrentNetworkInfo(interface as! CFString) as NSDictionary? {
+          let ssid = interfaceInfo[kCNNetworkInfoKeySSID as String] as? String
+          return ssid
+        }
+      }
+    }
+    return nil
   }
 }
 
