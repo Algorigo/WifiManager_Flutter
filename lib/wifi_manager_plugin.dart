@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 import 'package:permission_handler/permission_handler.dart';
-import 'package:rxdart/rxdart.dart';
 
 class PermissionException implements Exception {
   PermissionStatus status;
@@ -97,7 +96,7 @@ class _Observable<T> extends Stream<T> {
         .receiveBroadcastStream(_id)
         .map((event) => event as T)
         .listen((event) => onData?.call(event),
-            onError: (error) => onError?.call(error, null),
+            onError: (error) => onError?.call(error, error is Error ? error.stackTrace : StackTrace.empty),
             onDone: () => onDone?.call(),
             cancelOnError: true);
   }
