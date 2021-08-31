@@ -16,6 +16,10 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.exceptions.UndeliverableException
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import io.reactivex.rxjava3.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
 
 /** WifiManagerPlugin */
 class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventChannel.StreamHandler {
@@ -35,6 +39,14 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
 
     connectWifiEventChannel = EventChannel(flutterPluginBinding.binaryMessenger, CONNECT_WIFI_EVENT_CHANNEL_NAME)
     connectWifiEventChannel.setStreamHandler(this)
+
+    RxJavaPlugins.setErrorHandler { error ->
+      if (error is UndeliverableException) {
+        Log.w("Undeliverable exception", error)
+      } else {
+        return@setErrorHandler
+      }
+    }
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -60,9 +72,12 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
   private fun scanWifi(call: MethodCall, result: Result) {
     val only24GHz = call.arguments as? Boolean
     RxWifiManager.scan(context, only24GHz ?: false)
+            .timeout(10, TimeUnit.SECONDS)
             .map {
               it.map { it.SSID }
             }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
               result.success(it);
             }, {

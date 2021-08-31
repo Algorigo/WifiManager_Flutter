@@ -123,11 +123,15 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> scanWifi() async {
     print("scanWifi");
-    var wifiList = await WifiManagerPlugin.scanWifi(false);
+    try {
+      var wifiList = await WifiManagerPlugin.scanWifi(false);
 
-    setState(() {
-      _scanResult = wifiList;
-    });
+      setState(() {
+        _scanResult = wifiList;
+      });
+    } catch (e) {
+      print("scanWifie error :$e");
+    }
   }
 
   Future<void> scanResultSelected(int count) async {

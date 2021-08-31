@@ -55,10 +55,14 @@ class WifiManagerPlugin {
   }
 
   static Future<List<String>> scanWifi([bool only2GHz = false]) async {
-    return _channel.invokeMethod('scanWifi', only2GHz).then((value) {
-      var list = value as List<dynamic>;
-      return list.map((e) => e as String).toList();
-    });
+    try {
+      return _channel.invokeMethod('scanWifi', only2GHz).then((value) {
+        var list = value as List<dynamic>;
+        return list.map((e) => e as String).toList();
+      });
+    } catch (e){
+      throw e;
+    }
   }
 
   static Future<Stream<String>> connectWifi(
