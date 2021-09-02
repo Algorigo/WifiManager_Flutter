@@ -8,7 +8,7 @@ PODS:
   - RxRelay (6.1.0):
     - RxSwift (= 6.1.0)
   - RxSwift (6.1.0)
-  - wifi_manager_plugin (2.0.0):
+  - wifi_manager_plugin (2.0.3):
     - Flutter
     - RxCocoa (= 6.1.0)
     - RxSwift (= 6.1.0)
@@ -38,7 +38,7 @@ SPEC CHECKSUMS:
   RxCocoa: 5c51f02d562cbd94629f6c26cf0c80fe4ab8d343
   RxRelay: 483e1a19fad961b41f0b0c0bee506f46c1ae14fe
   RxSwift: a834e5c538e89eca0cae86f403f4fbf0336786ce
-  wifi_manager_plugin: 5a2441dc932aff56853d12b3c574d987940a257b
+  wifi_manager_plugin: 909d7ad53debec89343f362225bfaf73bbafb9e8
 
 PODFILE CHECKSUM: 762c2264b4ce73dbef14a4f858e912e1d7815d53
 
