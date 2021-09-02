@@ -8,7 +8,7 @@ PODS:
   - RxRelay (6.1.0):
     - RxSwift (= 6.1.0)
   - RxSwift (6.1.0)
-  - wifi_manager_plugin (2.0.2):
+  - wifi_manager_plugin (2.0.3):
     - Flutter
     - RxCocoa (= 6.1.0)
     - RxSwift (= 6.1.0)
