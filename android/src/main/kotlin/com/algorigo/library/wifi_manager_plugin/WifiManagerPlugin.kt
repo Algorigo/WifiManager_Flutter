@@ -106,10 +106,14 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
     val id = arguments as? Long
     if (id != null && observableMap.containsKey(id)) {
       disposableMap[id] = observableMap.remove(id)!!
+              .observeOn(AndroidSchedulers.mainThread())
               .doFinally {
+                events?.endOfStream()
                 disposableMap[id]?.dispose()
               }
-              .observeOn(AndroidSchedulers.mainThread())
+              .doOnError {
+                events?.error(it.javaClass.simpleName, it.message, it.stackTraceToString())
+              }
               .subscribe({
                 events?.success(it)
               }, {
