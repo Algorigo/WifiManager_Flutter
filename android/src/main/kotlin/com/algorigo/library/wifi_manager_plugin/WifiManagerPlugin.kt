@@ -2,6 +2,7 @@ package com.algorigo.library.wifi_manager_plugin
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import androidx.annotation.NonNull
 import com.algorigo.library.rx.RxWifiManager
@@ -20,6 +21,7 @@ import io.reactivex.rxjava3.exceptions.UndeliverableException
 import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /** WifiManagerPlugin */
 class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventChannel.StreamHandler {
@@ -91,7 +93,13 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
     if (ssid != null && password != null) {
       val id = (Math.random() * Long.MAX_VALUE).toLong()
       val observable = RxWifiManager.connectWifi(context, ssid, password).map { it.name }
-      observableMap[id] = observable
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        observableMap[id] = observable
+      } else {
+        observableMap[id] = observable.timeout(20, TimeUnit.SECONDS).doOnError {
+          result.error(TimeoutException::class.java.simpleName, null, null)
+        }
+      }
       result.success(id)
     } else {
       result.error(IllegalArgumentException::class.java.simpleName, null, null)
@@ -106,10 +114,10 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
     val id = arguments as? Long
     if (id != null && observableMap.containsKey(id)) {
       disposableMap[id] = observableMap.remove(id)!!
+              .observeOn(AndroidSchedulers.mainThread())
               .doFinally {
                 disposableMap[id]?.dispose()
               }
-              .observeOn(AndroidSchedulers.mainThread())
               .subscribe({
                 events?.success(it)
               }, {
