@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'wifi_manager_plugin'
-  s.version          = '2.1.1'
+  s.version          = '2.1.2'
   s.summary          = 'Wifi Manager Flutter plugin.'
   s.description      = <<-DESC
 A new Flutter plugin.
@@ -22,8 +22,8 @@ A new Flutter plugin.
   s.swift_version = '5.0'
 
   s.framework       = 'NetworkExtension'
-  s.dependency      'RxSwift', '6.2.0'
-  s.dependency      'RxCocoa', '6.2.0'
+  s.dependency      'RxSwift', '~> 6.5.0'
+  s.dependency      'RxCocoa', '~> 6.5.0'
 
   s.compiler_flags = '-DPERMISSION_LOCATION=1'
 end
