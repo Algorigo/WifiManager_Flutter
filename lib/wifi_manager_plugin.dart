@@ -27,6 +27,13 @@ class PermissionException implements Exception {
   }
 }
 
+class ScanResult {
+  String ssid;
+  int signalLevel;
+
+  ScanResult(this.ssid, this.signalLevel);
+}
+
 class WifiManagerPlugin {
   static const MethodChannel _channel =
       const MethodChannel('wifi_manager_plugin');
@@ -54,11 +61,11 @@ class WifiManagerPlugin {
     return apName;
   }
 
-  static Future<List<String>> scanWifi([bool only2GHz = false]) async {
+  static Future<List<ScanResult>> scanWifi([bool only2GHz = false]) async {
     try {
       return _channel.invokeMethod('scanWifi', only2GHz).then((value) {
         var list = value as List<dynamic>;
-        return list.map((e) => e as String).toList();
+        return list.map((e) => ScanResult(e['ssid'], e['signalLevel'])).toList();
       });
     } catch (e){
       throw e;
