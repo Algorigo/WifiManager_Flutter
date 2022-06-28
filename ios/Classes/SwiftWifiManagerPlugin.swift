@@ -45,11 +45,10 @@ extension SwiftWifiManagerPlugin: FlutterPlugin {
             if #available(iOS 11.0, *) {
                 observable = Observable<String>.create { (emitter) in
                     let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
-                    configuation.joinOnce = true
                     NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
-                        if error != nil {
+                        if let error = error {
                             print("connect error:\(error)")
-                            emitter.onError(error!)
+                            emitter.onError(error)
                         } else {
                             let connectedWifi = SwiftWifiManagerPlugin.getConnectedWifiApName()
                             if (ssid == connectedWifi) {
@@ -62,9 +61,6 @@ extension SwiftWifiManagerPlugin: FlutterPlugin {
                     return Disposables.create()
                 }.do(onDispose: {
                     NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
-//                     NEHotspotConfigurationManager.shared.getConfiguredSSIDs { list in
-//                         print("list:\(list)")
-//                     }
                 })
             } else {
                 // Fallback on earlier versions

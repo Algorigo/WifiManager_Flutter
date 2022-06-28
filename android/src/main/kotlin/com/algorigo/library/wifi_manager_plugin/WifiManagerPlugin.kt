@@ -2,6 +2,7 @@ package com.algorigo.library.wifi_manager_plugin
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import androidx.annotation.NonNull
 import com.algorigo.library.rx.RxWifiManager
@@ -16,6 +17,11 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.exceptions.UndeliverableException
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import io.reactivex.rxjava3.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /** WifiManagerPlugin */
 class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventChannel.StreamHandler {
@@ -35,6 +41,14 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
 
     connectWifiEventChannel = EventChannel(flutterPluginBinding.binaryMessenger, CONNECT_WIFI_EVENT_CHANNEL_NAME)
     connectWifiEventChannel.setStreamHandler(this)
+
+    RxJavaPlugins.setErrorHandler { error ->
+      if (error is UndeliverableException) {
+        Log.w("Undeliverable exception", error)
+      } else {
+        return@setErrorHandler
+      }
+    }
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -60,11 +74,19 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
   private fun scanWifi(call: MethodCall, result: Result) {
     val only24GHz = call.arguments as? Boolean
     RxWifiManager.scan(context, only24GHz ?: false)
+            .timeout(10, TimeUnit.SECONDS)
             .map {
-              it.map { it.SSID }
+              it.map {
+                mapOf(
+                  "ssid" to it.SSID,
+                  "signalLevel" to WifiManager.calculateSignalLevel(it.level, 4),
+                )
+              }
             }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
-              result.success(it);
+              result.success(it)
             }, {
               result.error(it.javaClass.simpleName, it.message, it.stackTraceToString())
             })
@@ -76,7 +98,13 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
     if (ssid != null && password != null) {
       val id = (Math.random() * Long.MAX_VALUE).toLong()
       val observable = RxWifiManager.connectWifi(context, ssid, password).map { it.name }
-      observableMap[id] = observable
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        observableMap[id] = observable
+      } else {
+        observableMap[id] = observable.timeout(20, TimeUnit.SECONDS).doOnError {
+          result.error(TimeoutException::class.java.simpleName, null, null)
+        }
+      }
       result.success(id)
     } else {
       result.error(IllegalArgumentException::class.java.simpleName, null, null)
@@ -91,10 +119,10 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
     val id = arguments as? Long
     if (id != null && observableMap.containsKey(id)) {
       disposableMap[id] = observableMap.remove(id)!!
+              .observeOn(AndroidSchedulers.mainThread())
               .doFinally {
                 disposableMap[id]?.dispose()
               }
-              .observeOn(AndroidSchedulers.mainThread())
               .subscribe({
                 events?.success(it)
               }, {
