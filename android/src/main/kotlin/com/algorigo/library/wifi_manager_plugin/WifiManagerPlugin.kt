@@ -76,12 +76,17 @@ class WifiManagerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, EventC
     RxWifiManager.scan(context, only24GHz ?: false)
             .timeout(10, TimeUnit.SECONDS)
             .map {
-              it.map { it.SSID }
+              it.map {
+                mapOf(
+                  "ssid" to it.SSID,
+                  "signalLevel" to WifiManager.calculateSignalLevel(it.level, 4),
+                )
+              }
             }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
-              result.success(it);
+              result.success(it)
             }, {
               result.error(it.javaClass.simpleName, it.message, it.stackTraceToString())
             })

@@ -28,7 +28,7 @@ class _MyAppState extends State<MyApp> {
 
   String _wifiResult = "";
   String _internetResult = "";
-  List<String> _scanResult = [];
+  List<ScanResult> _scanResult = [];
 
   @override
   void initState() {
@@ -136,7 +136,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> scanResultSelected(int count) async {
     setState(() {
-      _newApNameController.text = _scanResult[count];
+      _newApNameController.text = _scanResult[count].ssid;
     });
   }
 
@@ -176,7 +176,7 @@ class _MyAppState extends State<MyApp> {
                       child: Container(
                         padding: EdgeInsets.all(20),
                         width: double.infinity,
-                        child: Text(_scanResult[position]),
+                        child: Text(_scanResult[position].ssid),
                       ),
                     );
                   },
