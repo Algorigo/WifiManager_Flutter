@@ -11,84 +11,84 @@ enum WifiManagerError : Error {
 }
 
 public class SwiftWifiManagerPlugin: NSObject {
-
-  public static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: "wifi_manager_plugin", binaryMessenger: registrar.messenger())
-    let instance = SwiftWifiManagerPlugin()
-    registrar.addMethodCallDelegate(instance, channel: channel)
     
-    let connectWifiEventChannel = FlutterEventChannel(name: "wifi_manager_connect_wifi", binaryMessenger: registrar.messenger())
-    connectWifiEventChannel.setStreamHandler(instance)
-  }
-
-  private var observableDic = [Int: Observable<String>]()
-  private var disposableDic = [Int: Disposable]()
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        let channel = FlutterMethodChannel(name: "wifi_manager_plugin", binaryMessenger: registrar.messenger())
+        let instance = SwiftWifiManagerPlugin()
+        registrar.addMethodCallDelegate(instance, channel: channel)
+        
+        let connectWifiEventChannel = FlutterEventChannel(name: "wifi_manager_connect_wifi", binaryMessenger: registrar.messenger())
+        connectWifiEventChannel.setStreamHandler(instance)
+    }
+    
+    private var observableDic: [Int: Observable<String>] = [:]
+    private var disposableDic: [Int: Disposable] = [:]
 }
 
 extension SwiftWifiManagerPlugin: FlutterPlugin {
-  public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    switch call.method {
-    case "getPlatformVersion":
-        result("iOS " + UIDevice.current.systemVersion)
-    case "getConnectedWifiApName":
-        if let ssid = SwiftWifiManagerPlugin.getConnectedWifiApName() {
-          result(ssid)
-        } else {
-          result(FlutterError(code: "Unsupported", message: nil, details: nil))
-        }
-    case "connectWifi":
-        if let arguments = call.arguments as? [String: Any],
-           let ssid = arguments["ssid"] as? String,
-           let password = arguments["password"] as? String {
-            let id = Int.random(in: Int.min...Int.max)
-            let observable: Observable<String>
-            if #available(iOS 11.0, *) {
-                observable = Observable<String>.create { (emitter) in
-                    let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
-                    NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
-                        if let error = error {
-                            print("connect error:\(error)")
-                            emitter.onError(error)
-                        } else {
-                            let connectedWifi = SwiftWifiManagerPlugin.getConnectedWifiApName()
-                            if (ssid == connectedWifi) {
-                                emitter.onNext("Connected")
+    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        switch call.method {
+        case "getPlatformVersion":
+            result("iOS " + UIDevice.current.systemVersion)
+        case "getConnectedWifiApName":
+            if let ssid = SwiftWifiManagerPlugin.getConnectedWifiApName() {
+                result(ssid)
+            } else {
+                result(FlutterError(code: "Unsupported", message: nil, details: nil))
+            }
+        case "connectWifi":
+            if let arguments = call.arguments as? [String: Any],
+               let ssid = arguments["ssid"] as? String,
+               let password = arguments["password"] as? String {
+                let id = Int.random(in: Int.min...Int.max)
+                let observable: Observable<String>
+                if #available(iOS 11.0, *) {
+                    observable = Observable<String>.create { (emitter) in
+                        let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
+                        NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
+                            if let error = error {
+                                print("connect error:\(error)")
+                                emitter.onError(error)
                             } else {
-                                emitter.onError(WifiManagerError.wifiNotConnected)
+                                let connectedWifi = SwiftWifiManagerPlugin.getConnectedWifiApName()
+                                if (ssid == connectedWifi) {
+                                    emitter.onNext("Connected")
+                                } else {
+                                    emitter.onError(WifiManagerError.wifiNotConnected)
+                                }
                             }
                         }
-                    }
-                    return Disposables.create()
-                }.do(onDispose: {
-                    NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
-                })
+                        return Disposables.create()
+                    }.do(onDispose: {
+                        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
+                    })
+                } else {
+                    // Fallback on earlier versions
+                    observable = Observable.error(WifiManagerError.notSupportedOsVersion(version: ProcessInfo().operatingSystemVersionString))
+                }
+                observableDic[id] = observable
+                result(id)
             } else {
-                // Fallback on earlier versions
-                observable = Observable.error(WifiManagerError.notSupportedOsVersion(version: ProcessInfo().operatingSystemVersionString))
+                result(FlutterError(code: "IllegalArgument", message: nil, details: nil))
             }
-            observableDic[id] = observable
-            result(id)
-        } else {
-            result(FlutterError(code: "IllegalArgument", message: nil, details: nil))
+        case "scanWifi":
+            result(FlutterError(code: "Unsupported", message: nil, details: nil))
+        default:
+            result(FlutterMethodNotImplemented)
         }
-    case "scanWifi":
-        result(FlutterError(code: "Unsupported", message: nil, details: nil))
-    default:
-        result(FlutterMethodNotImplemented)
     }
-  }
-
-  fileprivate static func getConnectedWifiApName() -> String? {
-    if let interfaces = CNCopySupportedInterfaces() as NSArray? {
-      for interface in interfaces {
-        if let interfaceInfo = CNCopyCurrentNetworkInfo(interface as! CFString) as NSDictionary? {
-          let ssid = interfaceInfo[kCNNetworkInfoKeySSID as String] as? String
-          return ssid
+    
+    fileprivate static func getConnectedWifiApName() -> String? {
+        if let interfaces = CNCopySupportedInterfaces() as NSArray? {
+            for interface in interfaces {
+                if let interfaceInfo = CNCopyCurrentNetworkInfo(interface as! CFString) as NSDictionary? {
+                    let ssid = interfaceInfo[kCNNetworkInfoKeySSID as String] as? String
+                    return ssid
+                }
+            }
         }
-      }
+        return nil
     }
-    return nil
-  }
 }
 
 extension SwiftWifiManagerPlugin: FlutterStreamHandler {
