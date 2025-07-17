@@ -8,6 +8,7 @@ import RxSwift
 enum WifiManagerError : Error {
     case notSupportedOsVersion(version: String)
     case wifiNotConnected
+    case disconnected
 }
 
 public class WifiManagerPlugin: NSObject {
@@ -55,7 +56,23 @@ extension WifiManagerPlugin: FlutterPlugin {
                             return "Connected"
                         })
                         .asObservable()
-                        .concat(PublishSubject<String>())
+                        .flatMap({ result in
+                            Observable.just(result)
+                                .concat(
+                                    Observable<Int>.interval(RxTimeInterval.seconds(5), scheduler: ConcurrentDispatchQueueScheduler(qos: .background))
+                                        .flatMap({ _ in
+                                            WifiManagerPlugin.getConnectedWifiApName()
+                                                .asObservable()
+                                        })
+                                        .do(onNext: { connectedWifi in
+                                            if ssid != connectedWifi {
+                                                throw WifiManagerError.disconnected
+                                            }
+                                        })
+                                        .ignoreElements()
+                                        .map({ _ in "" })
+                                )
+                        })
                         .do(onDispose: {
                             NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
                         })
