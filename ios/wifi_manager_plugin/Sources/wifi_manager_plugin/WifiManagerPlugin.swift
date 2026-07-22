@@ -31,11 +31,14 @@ extension WifiManagerPlugin: FlutterPlugin {
         case "getPlatformVersion":
             result("iOS " + UIDevice.current.systemVersion)
         case "getConnectedWifiApName":
-            if let ssid = WifiManagerPlugin.getConnectedWifiApName() {
-                result(ssid)
-            } else {
-                result(FlutterError(code: "Unsupported", message: nil, details: nil))
-            }
+            WifiManagerPlugin.getConnectedWifiApName()
+                .subscribe { event in
+                    if case .success(let ssid) = event {
+                        result(ssid)
+                    } else {
+                        result(FlutterError(code: "Unsupported", message: nil, details: nil))
+                    }
+                }
         case "connectWifi":
             if let arguments = call.arguments as? [String: Any],
                let ssid = arguments["ssid"] as? String,
@@ -43,25 +46,19 @@ extension WifiManagerPlugin: FlutterPlugin {
                 let id = Int.random(in: Int.min...Int.max)
                 let observable: Observable<String>
                 if #available(iOS 11.0, *) {
-                    observable = Observable<String>.create { (emitter) in
-                        let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
-                        NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
-                            if let error = error {
-                                print("connect error:\(error)")
-                                emitter.onError(error)
-                            } else {
-                                let connectedWifi = WifiManagerPlugin.getConnectedWifiApName()
-                                if (ssid == connectedWifi) {
-                                    emitter.onNext("Connected")
-                                } else {
-                                    emitter.onError(WifiManagerError.wifiNotConnected)
-                                }
+                    observable = WifiManagerPlugin.connectWifi(ssid: ssid, password: password)
+                        .andThen(WifiManagerPlugin.getConnectedWifiApName())
+                        .map({ connectedWifi in
+                            if ssid != connectedWifi {
+                                throw WifiManagerError.wifiNotConnected
                             }
-                        }
-                        return Disposables.create()
-                    }.do(onDispose: {
-                        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
-                    })
+                            return "Connected"
+                        })
+                        .asObservable()
+                        .concat(PublishSubject<String>())
+                        .do(onDispose: {
+                            NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
+                        })
                 } else {
                     // Fallback on earlier versions
                     observable = Observable.error(WifiManagerError.notSupportedOsVersion(version: ProcessInfo().operatingSystemVersionString))
@@ -77,17 +74,52 @@ extension WifiManagerPlugin: FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
+    
+    fileprivate static func connectWifi(ssid: String, password: String) -> Completable {
+        if #available(iOS 11.0, *) {
+            return Completable.deferred {//polyworks1
+                let subject = PublishSubject<Any>()
+                let configuation = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
+                NEHotspotConfigurationManager.shared.apply(configuation) { (error) in
+                    if let error = error {
+                        print("connect error:\(error)")
+                        subject.onError(error)
+                    } else {
+                        subject.onCompleted()
+                    }
+                }
+                return subject.ignoreElements()
+                    .asCompletable()
+            }
+        } else {
+            return Completable.error(WifiManagerError.notSupportedOsVersion(version: ProcessInfo().operatingSystemVersionString))
+        }
+    }
 
-    fileprivate static func getConnectedWifiApName() -> String? {
-        if let interfaces = CNCopySupportedInterfaces() as NSArray? {
-            for interface in interfaces {
-                if let interfaceInfo = CNCopyCurrentNetworkInfo(interface as! CFString) as NSDictionary? {
-                    let ssid = interfaceInfo[kCNNetworkInfoKeySSID as String] as? String
-                    return ssid
+    fileprivate static func getConnectedWifiApName() -> Single<String?> {
+        if #available(iOS 14.0, *) {
+            return Single.deferred {
+                let subject = ReplaySubject<String?>.create(bufferSize: 1)
+                NEHotspotNetwork.fetchCurrent { network in
+                    if let ssid = network?.ssid, !ssid.isEmpty {
+                        subject.onNext(ssid)
+                    } else {
+                        subject.onNext(nil)
+                    }
+                }
+                return subject.first().map { $0.flatMap { $0 } }
+            }
+        } else {
+            if let interfaces = CNCopySupportedInterfaces() as NSArray? {
+                for interface in interfaces {
+                    if let interfaceInfo = CNCopyCurrentNetworkInfo(interface as! CFString) as NSDictionary? {
+                        let ssid = interfaceInfo[kCNNetworkInfoKeySSID as String] as? String
+                        return Single.just(ssid)
+                    }
                 }
             }
+            return Single.just(nil)
         }
-        return nil
     }
 }
 
