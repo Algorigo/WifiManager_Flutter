@@ -5,19 +5,21 @@ author: rouddy@naver.com
 homepage: https://www.algorigo.com
 
 environment:
-  sdk: ">=2.12.0 <4.0.0"
-  flutter: ">=1.20.0"
+  sdk: ^3.12.2
+  flutter: '>=3.3.0'
 
 dependencies:
   flutter:
     sdk: flutter
+  plugin_platform_interface: ^2.0.2
 
-  permission_handler: ^12.0.1
+  permission_handler: ^12.0.3
   rxdart: ^0.28.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -35,6 +37,12 @@ flutter:
         pluginClass: WifiManagerPlugin
       ios:
         pluginClass: WifiManagerPlugin
+      linux:
+        pluginClass: WifiManagerPlugin
+      macos:
+        pluginClass: WifiManagerPlugin
+      windows:
+        pluginClass: WifiManagerPluginCApi
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
