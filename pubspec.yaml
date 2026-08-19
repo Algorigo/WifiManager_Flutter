@@ -1,6 +1,6 @@
 name: wifi_manager_plugin
 description: Wifi Manager Flutter plugin.
-version: 2.3.1
+version: 2.4.0
 author: rouddy@naver.com
 homepage: https://www.algorigo.com
 
@@ -11,9 +11,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
+  plugin_platform_interface: ^2.1.8
 
-  permission_handler: ^12.0.3
+  permission_handler: ^13.0.1
   rxdart: ^0.28.0
 
 dev_dependencies:
